@@ -123,6 +123,23 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &129396554 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1257227337902900295, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+  m_PrefabInstance: {fileID: 1501872040}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &129396560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 129396554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6840141746447a8881c30a019de7d71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -373,7 +390,23 @@ PrefabInstance:
       value: OdinManager
       objectReference: {fileID: 0}
     - target: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: AutostartListen
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: ContinueRecording
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
       propertyPath: CustomInputDevice
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3711129780530095855, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: RedirectCapturedAudio
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4347901583853084589, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
@@ -424,6 +457,18 @@ PrefabInstance:
       propertyPath: AccessKey
       value: AaeRofLHpPza4ovc1DXRU08qJbVgWN61kg3cVJd7TpCn
       objectReference: {fileID: 0}
+    - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: NoiseSuppressionLevel
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5372910402810491490, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: VoiceActivityDetection
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7715469215244056103, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      propertyPath: Microphone
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 7715469215244056103, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
       propertyPath: Use3DAudio
       value: 1
@@ -435,7 +480,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1257227337902900295, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 129396560}
   m_SourcePrefab: {fileID: 100100000, guid: a421abe223e2dee45b89e686a84e5545, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
