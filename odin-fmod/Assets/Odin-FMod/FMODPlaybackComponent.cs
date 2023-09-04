@@ -22,7 +22,11 @@ public class FMODPlaybackComponent : MonoBehaviour
         }
     }
 
-    private PlaybackStream OdinMedia => OdinHandler.Instance.Rooms[RoomName]?
+    /// <summary>
+    /// Retrieves the connected media stream based on the room name, peer id and media id.
+    /// </summary>
+    /// <returns>Media Stream as Playbackstream, if room name, peer id and media id point to a valid stream, or null otherwise.</returns>
+    private PlaybackStream FindOdinMediaStream() => OdinHandler.Instance.Rooms[RoomName]?
         .RemotePeers[PeerId]?
         .Medias[MediaStreamId] as PlaybackStream;
 
@@ -37,7 +41,7 @@ public class FMODPlaybackComponent : MonoBehaviour
         set
         {
             _roomName = value;
-            PlaybackMedia = OdinMedia;
+            PlaybackMedia = FindOdinMediaStream();
         }
     }
 
@@ -51,7 +55,7 @@ public class FMODPlaybackComponent : MonoBehaviour
         set
         {
             _peerId = value;
-            PlaybackMedia = OdinMedia;
+            PlaybackMedia = FindOdinMediaStream();
         }
     }
 
@@ -65,13 +69,13 @@ public class FMODPlaybackComponent : MonoBehaviour
         set
         {
             _mediaStreamId = value;
-            PlaybackMedia = OdinMedia;
+            PlaybackMedia = FindOdinMediaStream();
         }
     }
 
-    private FMOD.CREATESOUNDEXINFO _createSoundInfo = new FMOD.CREATESOUNDEXINFO();
-    private FMOD.Sound _playbackSound;
-    private FMOD.Channel _playbackChannel;
+    private CREATESOUNDEXINFO _createSoundInfo;
+    private Sound _playbackSound;
+    private Channel _playbackChannel;
     private ulong _peerId;
     private long _mediaStreamId;
     private string _roomName;
@@ -91,53 +95,57 @@ public class FMODPlaybackComponent : MonoBehaviour
         _createSoundInfo.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
         _createSoundInfo.numchannels = numChannels;
         _createSoundInfo.defaultfrequency = playBackRate;
-        _createSoundInfo.format = FMOD.SOUND_FORMAT.PCMFLOAT;
+        _createSoundInfo.format = SOUND_FORMAT.PCMFLOAT;
         _pcmreadCallback = new SOUND_PCMREAD_CALLBACK(PcmReadCallback);
         _createSoundInfo.pcmreadcallback = _pcmreadCallback;
         _createSoundInfo.length = (uint)(playBackRate * sizeof(float) * numChannels);
 
-        FMODUnity.RuntimeManager.CoreSystem.createStream("", FMOD.MODE.OPENUSER | MODE.LOOP_NORMAL,
+        FMODUnity.RuntimeManager.CoreSystem.createStream("", MODE.OPENUSER | MODE.LOOP_NORMAL,
             ref _createSoundInfo, out _playbackSound);
 
-        FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out FMOD.ChannelGroup masterChannelGroup);
+        FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out ChannelGroup masterChannelGroup);
 
         FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
             out _playbackChannel);
     }
 
 
-    [AOT.MonoPInvokeCallback(typeof(FMOD.SOUND_PCMREAD_CALLBACK))]
+    [AOT.MonoPInvokeCallback(typeof(SOUND_PCMREAD_CALLBACK))]
     private RESULT PcmReadCallback(IntPtr sound, IntPtr data, uint dataLength)
     {
-        int dataArrayLength = (int)dataLength / sizeof(float);
-        if (_readBuffer.Length < dataArrayLength)
+        // retrieve array length of data that is requested
+        int requestedDataArrayLength = (int)dataLength / sizeof(float);
+        // resize read buffer if necessary
+        if (_readBuffer.Length < requestedDataArrayLength)
         {
-            _readBuffer = new float[dataArrayLength];
+            _readBuffer = new float[requestedDataArrayLength];
         }
 
+        // check data pointer for validity
         if (data == IntPtr.Zero)
         {
             // Handle error
-            return FMOD.RESULT.ERR_INVALID_PARAM;
+            return RESULT.ERR_INVALID_PARAM;
         }
 
+        // only read if we've joined any room and the connected playback media is valid.
         if (OdinHandler.Instance.HasConnections && !PlaybackMedia.IsInvalid)
         {
-            uint readResult = PlaybackMedia.AudioReadData(_readBuffer, (int)dataArrayLength);
-            if (Utility.IsError(readResult))
+            // read voice data from media stream into read buffer
+            uint odinReadResult = PlaybackMedia.AudioReadData(_readBuffer, requestedDataArrayLength);
+            if (Utility.IsError(odinReadResult))
             {
                 Debug.LogWarning(
-                    $"{nameof(FMODPlaybackComponent)} AudioReadData failed with error code {readResult}");
+                    $"{nameof(FMODPlaybackComponent)} AudioReadData failed with error code {odinReadResult}");
             }
             else
             {
-                int readLength = Mathf.Min(_readBuffer.Length, (int)dataArrayLength);
-                Marshal.Copy(_readBuffer, 0, data, readLength);
-
+                // copy read ODIN data into the FMOD stream
+                Marshal.Copy(_readBuffer, 0, data, requestedDataArrayLength);
             }
         }
 
-        return FMOD.RESULT.OK;
+        return RESULT.OK;
     }
 
 
