@@ -91,31 +91,30 @@ public class FMODPlaybackComponent : MonoBehaviour
         _createSoundInfo.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
         _createSoundInfo.numchannels = numChannels;
         _createSoundInfo.defaultfrequency = playBackRate;
-        _createSoundInfo.format = FMOD.SOUND_FORMAT.PCM16;
+        _createSoundInfo.format = FMOD.SOUND_FORMAT.PCMFLOAT;
         _pcmreadCallback = new SOUND_PCMREAD_CALLBACK(PcmReadCallback);
         _createSoundInfo.pcmreadcallback = _pcmreadCallback;
-        _createSoundInfo.length = (uint)(playBackRate * sizeof(short) * numChannels);
+        _createSoundInfo.length = (uint)(playBackRate * sizeof(float) * numChannels);
 
         FMODUnity.RuntimeManager.CoreSystem.createStream("", FMOD.MODE.OPENUSER | MODE.LOOP_NORMAL,
             ref _createSoundInfo, out _playbackSound);
 
         FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out FMOD.ChannelGroup masterChannelGroup);
-        RESULT playSoundResult =
-            FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
-                out _playbackChannel);
-        Debug.Log("PlaysoundResult: " + playSoundResult);
+
+        FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
+            out _playbackChannel);
     }
 
 
     [AOT.MonoPInvokeCallback(typeof(FMOD.SOUND_PCMREAD_CALLBACK))]
     private RESULT PcmReadCallback(IntPtr sound, IntPtr data, uint dataLength)
     {
-        int dataArrayLength = (int) dataLength / sizeof(short);
+        int dataArrayLength = (int)dataLength / sizeof(float);
         if (_readBuffer.Length < dataArrayLength)
         {
             _readBuffer = new float[dataArrayLength];
         }
-        
+
         if (data == IntPtr.Zero)
         {
             // Handle error
@@ -133,17 +132,8 @@ public class FMODPlaybackComponent : MonoBehaviour
             else
             {
                 int readLength = Mathf.Min(_readBuffer.Length, (int)dataArrayLength);
-                // Convert float[] _ReadBuffer to short[]
-                short[] shortData = new short[readLength];
-                for (int i = 0; i < readLength; i++)
-                {
-                    shortData[i] = (short)(_readBuffer[i] * 32767); // float to short
-                }
+                Marshal.Copy(_readBuffer, 0, data, readLength);
 
-
-                Marshal.Copy(shortData, 0, data, readLength);
-
-                // Copy shortData to data
             }
         }
 
