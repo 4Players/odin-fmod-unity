@@ -89,9 +89,7 @@ public class FMODPlaybackComponent : MonoBehaviour
     {
         int playBackRate = (int)OdinHandler.Config.RemoteSampleRate;
         int numChannels = (int)OdinHandler.Config.RemoteChannels;
-        /*
-          Create user sound to record into, then start recording.
-      */
+        
         _createSoundInfo.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
         _createSoundInfo.numchannels = numChannels;
         _createSoundInfo.defaultfrequency = playBackRate;

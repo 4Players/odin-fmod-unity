@@ -9,97 +9,124 @@ namespace Odin_FMod
 {
     public class FMODMicrophoneReader : MonoBehaviour
     {
-        private FMOD.CREATESOUNDEXINFO recordingSoundInfo = new CREATESOUNDEXINFO();
+        /// <summary>
+        /// Reference to the recording sound create info.
+        /// </summary>
+        private FMOD.CREATESOUNDEXINFO _recordingSoundInfo = new CREATESOUNDEXINFO();
 
-        private FMOD.Sound recordingSound;
-        private FMOD.Channel recordingChannel;
+        /// <summary>
+        /// Reference to the FMOD recording sound
+        /// </summary>
+        private FMOD.Sound _recordingSound;
 
-        private uint recordingSoundLength = 0;
-        private uint lastRecordPosition = 0;
+        /// <summary>
+        /// The recording sound length in PCM Samples
+        /// </summary>
+        private uint _recordingSoundLength = 0;
 
-        private int nativeRate;
-        private int nativeChannels;
+        /// <summary>
+        /// The current position at which we're reading samples from the FMOD recording sound, in PCM samples.
+        /// </summary>
+        private uint _currentReadPosition = 0;
 
-        private readonly uint minReadSamples = 0;
-        private readonly uint distanceToMicReadPosition = 0;
+        /// <summary>
+        /// Native microphone sampling rate in Hz
+        /// </summary>
+        private int _nativeRate;
+
+        /// <summary>
+        /// Number of native microphone channels.
+        /// </summary>
+        private int _nativeChannels;
+
+        private int _currentDeviceId = 0;
+
+        private float[] _readBuffer = new float[960];
+
 
         private void Start()
         {
-            FMODUnity.RuntimeManager.CoreSystem.getRecordDriverInfo(0, out _, 0, out _, out nativeRate, out _,
-                out nativeChannels, out _);
-            // Create user sound to record into, then start recording.
-            recordingSoundInfo.cbsize = Marshal.SizeOf(typeof(CREATESOUNDEXINFO));
-            recordingSoundInfo.numchannels = nativeChannels;
-            recordingSoundInfo.defaultfrequency = nativeRate;
-            recordingSoundInfo.format = SOUND_FORMAT.PCMFLOAT;
-            recordingSoundInfo.length = (uint)(nativeRate * sizeof(float) * nativeChannels);
+            // retrieve microphone info like sampling rate and number of channels
+            FMODUnity.RuntimeManager.CoreSystem.getRecordDriverInfo(_currentDeviceId, out _, 0, out _, out _nativeRate,
+                out _,
+                out _nativeChannels, out _);
+            // Setup recording sound that will contain microphone data
+            _recordingSoundInfo.cbsize = Marshal.SizeOf(typeof(CREATESOUNDEXINFO));
+            _recordingSoundInfo.numchannels = _nativeChannels;
+            _recordingSoundInfo.defaultfrequency = _nativeRate;
+            _recordingSoundInfo.format = SOUND_FORMAT.PCMFLOAT;
+            // make recording sound one second long
+            _recordingSoundInfo.length = (uint)(_nativeRate * sizeof(float) * _nativeChannels);
 
+            // Create recording sound
             FMODUnity.RuntimeManager.CoreSystem.createSound("", MODE.LOOP_NORMAL | MODE.OPENUSER,
-                ref recordingSoundInfo,
-                out recordingSound);
+                ref _recordingSoundInfo,
+                out _recordingSound);
 
-            var result = FMODUnity.RuntimeManager.CoreSystem.recordStart(0, recordingSound, true);
-            Debug.Log("Record Start result: " + result);
-
-            recordingSound.getLength(out recordingSoundLength, TIMEUNIT.PCM);
-            Debug.Log("Recording sound length: " + recordingSoundLength);
+            // Start recording
+            FMODUnity.RuntimeManager.CoreSystem.recordStart(_currentDeviceId, _recordingSound, true);
+            // retrieve recording sound length in pcm samples.
+            _recordingSound.getLength(out _recordingSoundLength, TIMEUNIT.PCM);
         }
 
-        private void FixedUpdate()
+        private void OnDestroy()
+        {
+            FMODUnity.RuntimeManager.CoreSystem.recordStop(_currentDeviceId);
+            _recordingSound.release();
+        }
+
+
+        private void Update()
         {
             if (!OdinHandler.Instance || OdinHandler.Instance.Rooms.Count == 0)
                 return;
 
-            /*
-          Determine how much has been recorded since we last checked
-      */
-            FMODUnity.RuntimeManager.CoreSystem.getRecordPosition(0, out var recordPosition);
+            // Determine how much has been recorded since we last checked
+            FMODUnity.RuntimeManager.CoreSystem.getRecordPosition(_currentDeviceId, out uint recordPosition);
+            uint recordDelta = (recordPosition >= _currentReadPosition)
+                ? (recordPosition - _currentReadPosition)
+                : (recordPosition + _recordingSoundLength - _currentReadPosition);
 
-            uint recordDelta = (recordPosition >= lastRecordPosition)
-                ? (recordPosition - lastRecordPosition)
-                : (recordPosition + recordingSoundLength - lastRecordPosition);
-
-            if (recordDelta < distanceToMicReadPosition)
+            if (recordDelta < 1)
                 return;
-
-            uint targetRecordArraySize = recordDelta - distanceToMicReadPosition;
-            if (targetRecordArraySize < minReadSamples)
-                return;
-
-            float[] micBuffer = new float[targetRecordArraySize];
-
-            uint recordArrayByteSize = targetRecordArraySize * sizeof(float);
+            
+            // update read buffer length, if buffer is too short
+            if(_readBuffer.Length < recordDelta)
+                _readBuffer = new float[recordDelta];
+            
+            uint recordArrayByteSize = recordDelta * sizeof(float);
 
             IntPtr micDataPointer, unusedData;
             uint readMicDataLength, unusedDataLength;
 
-            recordingSound.@lock(lastRecordPosition * sizeof(float), recordArrayByteSize, out micDataPointer, out unusedData,
+            // read microphone data from fmod sound and copy into _readBuffer
+            _recordingSound.@lock(_currentReadPosition * sizeof(float), recordArrayByteSize, out micDataPointer,
+                out unusedData,
                 out readMicDataLength, out unusedDataLength);
-            Marshal.Copy(micDataPointer, micBuffer, 0, (int)readMicDataLength / sizeof(float));
-            recordingSound.unlock(micDataPointer, unusedData, readMicDataLength, unusedDataLength);
+            uint readArraySize = readMicDataLength / sizeof(float);
+            Marshal.Copy(micDataPointer, _readBuffer, 0, (int)readArraySize);
+            _recordingSound.unlock(micDataPointer, unusedData, readMicDataLength, unusedDataLength);
 
-            if (targetRecordArraySize > 0)
+            if (readMicDataLength > 0)
             {
                 foreach (var room in OdinHandler.Instance.Rooms)
                 {
                     if (null == room.MicrophoneMedia)
                     {
-                        room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)nativeRate,
-                            (MediaChannels)nativeChannels));
+                        // initialize the rooms microphone media, if none is available
+                        room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
+                            (MediaChannels)_nativeChannels));
                     }
 
-                    if (null != room?.MicrophoneMedia)
-                        room.MicrophoneMedia.AudioPushData(micBuffer, (int)targetRecordArraySize);
+                    // push microphone data to odin servers
+                    if (null != room.MicrophoneMedia)
+                        room.MicrophoneMedia.AudioPushData(_readBuffer, (int)readArraySize);
                 }
             }
 
-
-            Debug.Log("Current Record Pos: " + recordPosition + " Last Record Pos: " + lastRecordPosition +
-                      " read data: " + targetRecordArraySize);
-
-            lastRecordPosition += targetRecordArraySize;
-            if (lastRecordPosition > recordingSoundLength)
-                lastRecordPosition -= recordingSoundLength;
+            _currentReadPosition += readArraySize;
+            if (_currentReadPosition >= _recordingSoundLength)
+                _currentReadPosition -= _recordingSoundLength;
         }
     }
 }
