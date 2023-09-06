@@ -73,37 +73,49 @@ public class FMODPlaybackComponent : MonoBehaviour
         }
     }
 
-    private CREATESOUNDEXINFO _createSoundInfo;
     private Sound _playbackSound;
+    /// <summary>
+    /// Reference to the FMOD Sound created for playing back the connected ODIN Media Stream.
+    /// </summary>
+    public Sound FMODPlaybackSound => _playbackSound;
+
+    private Channel _playbackChannel;
+    
+    /// <summary>
+    /// Reference to the FMOD Channel created for playing back the connected ODIN Media Stream.
+    /// </summary>
+    public Channel FMODPlaybackChannel => _playbackChannel;
+
+    private CREATESOUNDEXINFO _createSoundInfo;
     private ulong _peerId;
     private long _mediaStreamId;
     private string _roomName;
     private float[] _readBuffer = Array.Empty<float>();
 
-    private SOUND_PCMREAD_CALLBACK _pcmreadCallback;
-
+    private SOUND_PCMREAD_CALLBACK _pcmReadCallback;
 
     // Start is called before the first frame update
     void Start()
     {
         int playBackRate = (int)OdinHandler.Config.RemoteSampleRate;
         int numChannels = (int)OdinHandler.Config.RemoteChannels;
-        
+
         _createSoundInfo.cbsize = Marshal.SizeOf(typeof(FMOD.CREATESOUNDEXINFO));
         _createSoundInfo.numchannels = numChannels;
         _createSoundInfo.defaultfrequency = playBackRate;
         _createSoundInfo.format = SOUND_FORMAT.PCMFLOAT;
-        _pcmreadCallback = new SOUND_PCMREAD_CALLBACK(PcmReadCallback);
-        _createSoundInfo.pcmreadcallback = _pcmreadCallback;
+        _pcmReadCallback = new SOUND_PCMREAD_CALLBACK(PcmReadCallback);
+        _createSoundInfo.pcmreadcallback = _pcmReadCallback;
         _createSoundInfo.length = (uint)(playBackRate * sizeof(float) * numChannels);
 
         FMODUnity.RuntimeManager.CoreSystem.createStream("", MODE.OPENUSER | MODE.LOOP_NORMAL,
             ref _createSoundInfo, out _playbackSound);
 
+
         FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out ChannelGroup masterChannelGroup);
 
         FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
-            out _);
+            out _playbackChannel);
     }
 
 
