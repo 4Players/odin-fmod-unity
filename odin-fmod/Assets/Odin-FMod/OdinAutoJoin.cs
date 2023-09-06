@@ -5,7 +5,7 @@ using OdinNative.Odin.Room;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-public class AutoConnect : MonoBehaviour
+public class OdinAutoJoin : MonoBehaviour
 {
     [SerializeField] private string roomName;
     [SerializeField] private FMODPlaybackComponent playbackPrefab;
