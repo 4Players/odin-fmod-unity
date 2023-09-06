@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using FMOD;
 using OdinNative.Core;
+using OdinNative.Odin.Room;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -78,7 +79,7 @@ namespace Odin_FMod
 
         private void Update()
         {
-            if (!OdinHandler.Instance || OdinHandler.Instance.Rooms.Count == 0)
+            if (!OdinHandler.Instance || !OdinHandler.Instance.HasConnections || OdinHandler.Instance.Rooms.Count == 0)
                 return;
 
             // Determine how much has been recorded since we last checked
@@ -111,12 +112,7 @@ namespace Odin_FMod
             {
                 foreach (var room in OdinHandler.Instance.Rooms)
                 {
-                    if (null == room.MicrophoneMedia)
-                    {
-                        // initialize the rooms microphone media, if none is available
-                        room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
-                            (MediaChannels)_nativeChannels));
-                    }
+                    ValidateMicrophoneStream(room);
 
                     // push microphone data to odin servers
                     if (null != room.MicrophoneMedia)
@@ -127,6 +123,32 @@ namespace Odin_FMod
             _currentReadPosition += readArraySize;
             if (_currentReadPosition >= _recordingSoundLength)
                 _currentReadPosition -= _recordingSoundLength;
+        }
+
+        /// <summary>
+        /// Checks the rooms microphone stream for correct setup and initializes the stream if necessary.
+        /// </summary>
+        /// <param name="room">Room to check the stream for.</param>
+        private void ValidateMicrophoneStream(Room room)
+        {
+            if (null == room.MicrophoneMedia)
+            {
+                // initialize the rooms microphone media, if none is available
+                room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
+                    (MediaChannels)_nativeChannels));
+            }
+
+            if (room.MicrophoneMedia != null)
+            {
+                // initializes the rooms microphone media, if configuration is invalid
+                var config = room.MicrophoneMedia.MediaConfig;
+                if (_nativeRate != (int)config.SampleRate || _nativeChannels != (int)config.Channels)
+                {
+                    room.MicrophoneMedia.Dispose();
+                    room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
+                        (MediaChannels)_nativeChannels));
+                }
+            }
         }
     }
 }

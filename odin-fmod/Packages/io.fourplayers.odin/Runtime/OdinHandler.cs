@@ -303,8 +303,8 @@ public class OdinHandler : MonoBehaviour
         }
         Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
-        // if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
-        //     Debug.Log($"MicrophoneStream added to room {roomName}.");
+        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
+            Debug.Log($"MicrophoneStream added to room {roomName}.");
 
         await System.Threading.Tasks.Task.Yield();
 
@@ -349,8 +349,8 @@ public class OdinHandler : MonoBehaviour
         }
         Debug.Log($"Odin {Config.ClientId}: Room {room.Config.Name} joined.");
 
-        // if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
-        //     Debug.Log($"MicrophoneStream added to room {roomAlias}.");
+        if (room.CreateMicrophoneMedia(new OdinNative.Core.OdinMediaConfig(Microphone.SampleRate, Config.DeviceChannels)))
+            Debug.Log($"MicrophoneStream added to room {roomAlias}.");
 
         await System.Threading.Tasks.Task.Yield();
 

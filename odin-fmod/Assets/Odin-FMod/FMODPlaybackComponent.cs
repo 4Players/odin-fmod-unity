@@ -75,7 +75,6 @@ public class FMODPlaybackComponent : MonoBehaviour
 
     private CREATESOUNDEXINFO _createSoundInfo;
     private Sound _playbackSound;
-    private Channel _playbackChannel;
     private ulong _peerId;
     private long _mediaStreamId;
     private string _roomName;
@@ -104,7 +103,7 @@ public class FMODPlaybackComponent : MonoBehaviour
         FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out ChannelGroup masterChannelGroup);
 
         FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
-            out _playbackChannel);
+            out _);
     }
 
 
