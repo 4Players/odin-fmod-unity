@@ -6,19 +6,23 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class DragMovement : MonoBehaviour
 {
-    private Camera mainCamera;
+    [SerializeField] private float dragSizeIncrease = 1.1f;
     
+    private Camera mainCamera;
     private bool _isDragActive = false;
+
+    private Vector3 _initialScale;
 
     private void Start()
     {
         mainCamera = Camera.main;
+        _initialScale = transform.localScale;
     }
 
     private void OnMouseDown()
     {
         _isDragActive = true;
-        transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);
+        transform.localScale = dragSizeIncrease * _initialScale;
     }
 
     private Vector3 GetWorldMousePos()
@@ -33,7 +37,7 @@ public class DragMovement : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Mouse0))
         {
             _isDragActive = false;
-            transform.localScale = new Vector3(1f, 1f, 1f);
+            transform.localScale = _initialScale;
         }
 
         if (_isDragActive)

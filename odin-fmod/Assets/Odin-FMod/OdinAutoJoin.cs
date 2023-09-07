@@ -58,6 +58,7 @@ public class OdinAutoJoin : MonoBehaviour
         if (roomObject is Room room)
         {
             FMODPlaybackComponent newPlayback = Instantiate(playbackPrefab);
+            newPlayback.transform.position = transform.position;
             newPlayback.RoomName = room.Config.Name;
             newPlayback.PeerId = mediaAddedEventArgs.PeerId;
             newPlayback.MediaStreamId = mediaAddedEventArgs.Media.Id;
