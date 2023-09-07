@@ -116,8 +116,7 @@ public class FMODPlaybackComponent : MonoBehaviour
         FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
             out _playbackChannel);
     }
-
-
+    
     [AOT.MonoPInvokeCallback(typeof(SOUND_PCMREAD_CALLBACK))]
     private RESULT PcmReadCallback(IntPtr sound, IntPtr data, uint dataLength)
     {
@@ -152,14 +151,11 @@ public class FMODPlaybackComponent : MonoBehaviour
                 Marshal.Copy(_readBuffer, 0, data, requestedDataArrayLength);
             }
         }
-
         return RESULT.OK;
     }
-
-
+    
     private void OnDestroy()
     {
-       
         _playbackSound.release();
     }
 }
