@@ -40,8 +40,15 @@ namespace Odin_FMod
         /// </summary>
         private int _nativeChannels;
 
+        /// <summary>
+        /// The device id, from which the microphone data is recorded.
+        ///
+        /// Needs to be adjusted, if the recording should be done from a microphone
+        /// other than the Default Device.
+        /// </summary>
         private int _currentDeviceId = 0;
 
+        // 50ms * 48kHz sampling rate = 960 samples
         private float[] _readBuffer = new float[960];
 
 
@@ -49,8 +56,7 @@ namespace Odin_FMod
         {
             // retrieve microphone info like sampling rate and number of channels
             FMODUnity.RuntimeManager.CoreSystem.getRecordDriverInfo(_currentDeviceId, out _, 0, out _, out _nativeRate,
-                out _,
-                out _nativeChannels, out _);
+                out _,out _nativeChannels, out _);
             // Setup recording sound that will contain microphone data
             _recordingSoundInfo.cbsize = Marshal.SizeOf(typeof(CREATESOUNDEXINFO));
             _recordingSoundInfo.numchannels = _nativeChannels;
@@ -131,23 +137,14 @@ namespace Odin_FMod
         /// <param name="room">Room to check the stream for.</param>
         private void ValidateMicrophoneStream(Room room)
         {
-            if (null == room.MicrophoneMedia)
+            bool isValidStream = null != room.MicrophoneMedia &&
+                                 _nativeChannels == (int)room.MicrophoneMedia.MediaConfig.Channels &&
+                                 _nativeRate == (int)room.MicrophoneMedia.MediaConfig.SampleRate;
+            if (!isValidStream)
             {
-                // initialize the rooms microphone media, if none is available
+                room.MicrophoneMedia?.Dispose();
                 room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
                     (MediaChannels)_nativeChannels));
-            }
-
-            if (room.MicrophoneMedia != null)
-            {
-                // initializes the rooms microphone media, if configuration is invalid
-                var config = room.MicrophoneMedia.MediaConfig;
-                if (_nativeRate != (int)config.SampleRate || _nativeChannels != (int)config.Channels)
-                {
-                    room.MicrophoneMedia.Dispose();
-                    room.CreateMicrophoneMedia(new OdinMediaConfig((MediaSampleRate)_nativeRate,
-                        (MediaChannels)_nativeChannels));
-                }
             }
         }
     }

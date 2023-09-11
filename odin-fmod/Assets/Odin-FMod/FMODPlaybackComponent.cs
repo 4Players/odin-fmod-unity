@@ -110,9 +110,7 @@ public class FMODPlaybackComponent : MonoBehaviour
 
         FMODUnity.RuntimeManager.CoreSystem.createStream("", MODE.OPENUSER | MODE.LOOP_NORMAL,
             ref _createSoundInfo, out _playbackSound);
-        
         FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out ChannelGroup masterChannelGroup);
-
         FMODUnity.RuntimeManager.CoreSystem.playSound(_playbackSound, masterChannelGroup, false,
             out _playbackChannel);
     }
